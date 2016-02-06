@@ -2835,6 +2835,7 @@ describe("possible regressions", function () {
 describe("unhandled rejection reporting", function () {
     beforeEach(function () {
         Q.resetUnhandledRejections();
+        Q.onunhandledrejection = function (promise) { console.log(promise)};
     });
 
     it("doesn't report a resolve, then reject (gh-252)", function () {
@@ -2888,5 +2889,51 @@ describe("unhandled rejection reporting", function () {
         Q.reject("another reason");
 
         expect(Q.getUnhandledReasons()).toEqual([]);
+    });
+
+    it("does not track unhandled rejections Q.onunhandledrejection is not set", function () {
+        Q.onunhandledrejection = undefined;
+
+        Q.reject("a reason");
+
+        expect(Q.getUnhandledReasons()).toEqual([]);
+    });
+
+    it("does not track unhandled rejections if Q.onunhandledrejection is not a function", function () {
+        Q.onunhandledrejection = {};
+
+        Q.reject("a reason");
+
+        expect(Q.getUnhandledReasons()).toEqual([]);
+    });
+
+    it("calls Q.onunhandledrejection with a promise and the reject reason", function () {
+        var reason = "a reason";
+        var deferred = Q.defer();
+
+        Q.onunhandledrejection = function (unhandledPromise, unhandledReason) {
+            expect(Q.isPromise(unhandledPromise)).toEqual(true);
+            expect(unhandledReason).toEqual(reason);
+        };
+
+        deferred.reject(reason);
+    });
+
+    it("does not unset Q.onunhandledrejection when Q.resetUnhandledRejections is called", function () {
+        function handleRejection () {};
+        Q.onunhandledrejection = handleRejection;
+
+        Q.resetUnhandledRejections();
+
+        expect(Q.onunhandledrejection).toEqual(handleRejection);
+    });
+
+    it("does not unset Q.onunhandledrejection when Q.stopUnhandledRejectionTracking is called", function () {
+        function handleRejection () {};
+        Q.onunhandledrejection = handleRejection;
+
+        Q.stopUnhandledRejectionTracking();
+
+        expect(Q.onunhandledrejection).toEqual(handleRejection);
     });
 });

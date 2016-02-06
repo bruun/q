@@ -1053,6 +1053,11 @@ function trackRejection(promise, reason) {
     if (!trackUnhandledRejections) {
         return;
     }
+
+    if (!Q.onunhandledrejection || typeof Q.onunhandledrejection !== "function") {
+        return;
+    }
+
     if (typeof process === "object" && typeof process.emit === "function") {
         Q.nextTick.runAfter(function () {
             if (array_indexOf(unhandledRejections, promise) !== -1) {
@@ -1068,6 +1073,8 @@ function trackRejection(promise, reason) {
     } else {
         unhandledReasons.push("(no stack) " + reason);
     }
+
+    Q.onunhandledrejection(promise, reason);
 }
 
 function untrackRejection(promise) {
